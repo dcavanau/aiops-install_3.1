@@ -1,15 +1,15 @@
 # CP4WatsonAIOps 3.1 Demo Environment Installation
 
-
 ## ❗ THIS IS WORK IN PROGRESS
+
 Please drop me a note on Slack or by mail nikh@ch.ibm.com if you find glitches or problems.
 This version is up to date as of April 27th 2021.
 The working repo might contain some newer commits and fixes:
 [https://github.com/niklaushirt/aiops-install_3.1](https://github.com/niklaushirt/aiops-install_3.1)
 
-# Changes
+## Changes
 
-| Date  | Description  | Files  | 
+| Date  | Description  | Files  |
 |---|---|---|
 |  22 Apr 2021 | 3.1 Preview install  | This is experimental!  |
 |  27 Apr 2021 | Prerequisites  | `jq` and `kubectl` not needed anymore  |
@@ -20,13 +20,13 @@ The working repo might contain some newer commits and fixes:
 |  03 Mar 2021 | Removed Bookinfo from Scripts  |  ❗RobotShop is the way forward  |
 |  04 Mar 2021 | Added training instructions  |  |
 |  07 Mar 2021 | Official beta version  |  |
-|  1 Mar 2021 | Added Quote of the Day demo app  | https://gitlab.com/quote-of-the-day/quote-of-the-day by Jim Conallen |
-|   |   |   | 
-
-
+|  1 Mar 2021 | Added Quote of the Day demo app  | <https://gitlab.com/quote-of-the-day/quote-of-the-day> by Jim Conallen |
+|   |   |   |
 
 ---------------------------------------------------------------------------------------------------------------
-# Installation
+
+## Installation
+
 ---------------------------------------------------------------------------------------------------------------
 
 1. [Prerequisites](#prerequisites)
@@ -34,7 +34,7 @@ The working repo might contain some newer commits and fixes:
 1. [AI and Event Manager Base Install](#ai-and-event-manager-base-install)
 1. [Configure Humio](#humio)
 1. [Connections from AI Manager (Ops Integration)](#connections-from-ai-manager-ops-integration)
-2. [Training](#training)
+1. [Training](#training)
 1. [Configure Applications and Topology](#configure-applications-and-topology)
 1. [Configure Event Manager](#configure-event-manager)
 1. [Configure Runbooks](#configure-runbooks)
@@ -42,14 +42,13 @@ The working repo might contain some newer commits and fixes:
 1. [Some Polishing](#some-polishing)
 1. [Check Installation](#check-installation)
 
-
 > ❗You can find a handy install checklist here: [INSTALLATION CHECKLIST](./README_INSTALLATION_CHECKLIST.md).
 
+---------------------------------------------------------------------------------------------------------------
 
+## Introduction
 
 ---------------------------------------------------------------------------------------------------------------
-## Introduction
-------------------------------------------------------------------------------
 
 This repository documents the progress of me learning to build a Watson AIOps demo environment.
 
@@ -59,20 +58,16 @@ This is provided `as-is`:
 * I'm sure it's not complete
 * It clearly can be improved
 
-So please if you have any feedback contact me 
+So please if you have any feedback contact me
 
-- on Slack: Niklaus Hirt or
-- by Mail: nikh@ch.ibm.com
-
-
-
-
-
+* on Slack: Niklaus Hirt or
+* by Mail: nikh@ch.ibm.com
 
 ---------------------------------------------------------------------------------------------------------------
-## Prerequisites
-------------------------------------------------------------------------------
 
+## Prerequisites
+
+---------------------------------------------------------------------------------------------------------------
 
 ### OpenShift requirements
 
@@ -80,93 +75,85 @@ I installed the demo in a ROKS environment.
 
 You'll need:
 
-- ROKS 4.6
-- 5x worker nodes Flavor `b3c.16x64` (so 16 CPU / 64 GB)
+* ROKS 4.6
+* 5x worker nodes Flavor `b3c.16x64` (so 16 CPU / 64 GB)
 
 You might get away with less if you don't install some components (Humio,...)
-
-
 
 ### Adapt Hosts file (Fyre only)
 
 When using IBM Fyre on Mac you have to adapt your Hosts file.
 
-- Get the IP address of your Cluster 
+* Get the IP address of your Cluster
 
-	```bash
-	ping api.<your-fyre-url>
-	
-		EXAMPLE: 
-		ping api.dteocp-270003bu3k-vyvrs.cp.fyre.ibm.com -c1
-		
-		PING cp-console.apps.dteocp-270003bu3k-vyvrs.cp.fyre.ibm.com (9.30.91.173): 56 data bytes
-		64 bytes from 9.30.91.173: icmp_seq=0 ttl=52 time=236.575 ms
-	```
+ ```bash
+  ping api.<your-fyre-url>
+ 
+    EXAMPLE: 
+    ping api.dteocp-270003bu3k-vyvrs.cp.fyre.ibm.com -c1
+  
+    PING cp-console.apps.dteocp-270003bu3k-vyvrs.cp.fyre.ibm.com (9.30.91.173): 56 data bytes
+    64 bytes from 9.30.91.173: icmp_seq=0 ttl=52 time=236.575 ms
+ ```
 
-- Update Hosts file
+* Update Hosts file
 
-	```bash
-	vi /etc/hosts
-	```
-	
-- Add the following
-	
-	```bash	
-	<IP from above> cp-console.<your-fyre-url> api.<your-fyre-url>
-	
-	
-		EXAMPLE: 
-		9.30.91.173   cp-console.apps.dteocp-270003bu3k-vyvrs.cp.fyre.ibm.com api.dteocp-270003bu3k-vyvrs.cp.fyre.ibm.com
-	```
-
-
+ ```bash
+ vi /etc/hosts
+ ```
+ 
+* Add the following
+ 
+ ```bash
+   <IP from above> cp-console.<your-fyre-url> api.<your-fyre-url>
+ 
+    EXAMPLE: 
+    9.30.91.173   cp-console.apps.dteocp-270003bu3k-vyvrs.cp.fyre.ibm.com   api.dteocp-270003bu3k-vyvrs.cp.fyre.ibm.com
+ ```
 
 ### Storage Requirements
 
-❗**The only officially supported storage solution for production installations is Portworx Enterprise
-**
+❗**The only officially supported storage solution for production installations is Portworx Enterprise**
 The instructions only apply for demo installations!
-
 
 Please make sure that an appropriate StorageClass is available (you will have to parametrize those as described in [Adapt configuration](#adapt-configuration))
 
-- On IBM ROKS use: ibmc-file-gold-gid
-- On TEC use:      nfs-client
-- On FYRE use:     rook-cephfs 
+* On IBM ROKS use: ibmc-file-gold-gid
+* On TEC use:      nfs-client
+* On FYRE use:     rook-cephfs
 
 #### ❗Required for installations on IBM Fyre
+
 ⚠️ **If you don't have a StorageClass, you can install Rook/Ceph with `./22_install_rook.sh`.**
-            
 
 ### Docker Pull secret
 
 In order to avoid errors with Docker Registry pull rate limits, you should add your Docker credentials to the Cluster.
 This can occur especially with Rook/Ceph installation.
 
-* Go to Secrets in Namespace `openshift-config`
-* Open the `pull-secret`Secret
-* Select `Actions`/`Edit Secret` 
+* Go to `Secrets` in Namespace `openshift-config`
+* Open the `pull-secret` Secret
+* Select `Actions`/`Edit Secret`
 * Scroll down and click `Add Credentials`
 * Enter your Docker credentials
 
-	![](./pics/dockerpull.png)
+ ![](./pics/dockerpull.png)
 
 * Click Save
 
 If you already have Pods in ImagePullBackoff state then just delete them. They will recreate and should pull the image correctly.
- 
 
 ### Tooling
 
 You need the following tools installed in order to follow through this guide:
 
-- gnu-sed (on Mac)
-- oc
-- jq (Not needed anymore)
-- kubectl (Not needed anymore - replaced by `oc`)
-- kafkacat
-- kafka
-- helm 3
+* gnu-sed (on Mac)
+* oc
+* jq (Not needed anymore)
+* kubectl (Not needed anymore - replaced by `oc`)
+* kafkacat
+* kafka
+* helm 3
 
 ```bash
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -176,8 +163,7 @@ brew install kafka
 # brew install jq
 ```
 
-
-Get oc and oc from [here](https://github.com/openshift/okd/releases/)
+Get oc from [here](https://github.com/openshift/okd/releases/)
 
 or use :
 
@@ -185,19 +171,19 @@ or use :
 wget https://github.com/openshift/okd/releases/download/4.6.0-0.okd-2021-02-14-205305/openshift-client-mac-4.6.0-0.okd-2021-02-14-205305.tar.gz -O oc.tar.gz
 tar xfzv oc.tar.gz
 mv oc /usr/local/bin
-mv oc /usr/local/bin
 ```
 
 ### Get the scripts and code from GitHub
 
-And obviosuly you'll need to download this repository to use the scripts.
+And obviouslly you'll need to download this repository to use the scripts.
 
+---------------------------------------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 ## Architecture
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-The environement (Kubernetes, Applications, ...) create logs that are being fed into a Log Management Tool (Humio in this case).
+---------------------------------------------------------------------------------------------------------------
+
+The environment (Kubernetes, Applications, ...) creates logs that are being fed into a Log Management Tool (Humio in this case).
 
 ![](./pics/aiops-demo.png)
 
@@ -212,16 +198,15 @@ The Story is then sent to Slack.
 
 At the same time Event Manager launches an automated Runbook to correct the problem.
 
-
-
-
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
 ## AI and Event Manager Base Install
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ### Adapt configuration
 
-Adapt the 01_config-modules.sh file with the desired parameters:
+Adapt the `01_config-modules.sh` file with the desired parameters:
 
 **Storage Class**
 
@@ -249,42 +234,37 @@ export INSTALL_DEMO=true
 
 ```
 
-Make sure that you are logged into your cluster!
+Make sure that you are logged into your cluster with the OpenShift CLI and the IBM Cloud CLI. Retrieve the IBM Container Software Library [ENTITLEMENT_KEY](https://myibm.ibm.com/products-services/containerlibrary).
 
 ### Start installation
 
 ```bash
-./10_install_aiops.sh -t <PULL_SECRET_TOKEN>
+./10_install_aiops.sh -t <ENTITLEMENT_KEY>
 ```
 
 This will install:
 
-- Knative
-- Strimzi
-- CP4WAIOPS
+* Knative
+* Strimzi
+* CP4WAIOPS
 
-
-### Post-installation 
+### Post-installation
 
 The above script will automatically launch the post-installation:
 
-- Humio 
-- OpenLDAP
-- Demo Apps
-- Register LDAP Users
-- Gateway
-- Housekeeping
-	- Additional Routes (Topology, Flink, Strimzi)
-	- Create OCP User (serviceaccount demo-admin)
-	- Patch Ingress
-	- Adapt NGINX Certificates
-	- Adapt Slack Welcome message to /welcome
-
-
+* Humio
+* OpenLDAP
+* Demo Apps
+* Register LDAP Users
+* Gateway
+* Housekeeping
+  * Additional Routes (Topology, Flink, Strimzi)
+  * Create OCP User (serviceaccount demo-admin)
+  * Patch Ingress
+  * Adapt NGINX Certificates
+  * Adapt Slack Welcome message to /welcome
 
 Get the exhaustive list of all the steps [here](./README_INSTALLATION_SCRIPT_STEPS.md).
-
-
 
 ### Re-running post-installation
 
@@ -295,7 +275,6 @@ In some cases it might be that the post-installation tasks abort for some reason
 ```bash
 ./11_postinstall_aiops.sh
 ```
-
 
 ### Get Passwords and Credentials
 
@@ -311,19 +290,18 @@ Usually it's a good idea to store this in a file for later use:
 
 At any moment you can run `./81_check-aiops-install.sh` to check on installation progress.
 
+---------------------------------------------------------------------------------------------------------------
 
+## HUMIO
 
 ---------------------------------------------------------------------------------------------------------------
-## HUMIO
-------------------------------------------------------------------------------
 
 > ❗Humio is being installed by the installation script.
 
-
 ### Configure Humio
 
-* Create Repository `aiops`
-* Get Ingest token (<TOKEN_FOR_HUMIO_AIOPS_REPOSITORY>) (`Settings` / `API tokens`)
+* Create Repository (`Add Item` / `Repository` / `aiops` / `Create repository`)
+* Get Ingest token (<TOKEN_FOR_HUMIO_AIOPS_REPOSITORY>) (`aiops' / `Settings` / `API tokens`)
 
 ### Limit retention
 
@@ -333,19 +311,13 @@ This is important as your PVCs will fill up otherwise and Humio can become unava
 
 You have to change the retention options for the aiops repository
 
-![](./pics/humior1.png)
+![](./pics/humio1.png)
 
 #### Change retention size for humio
 
 You have to change the retention options for the humio repository
 
-![](./pics/humior2.png)
-
-#### Get the 
-
-
-
-
+![](./pics/humio2.png)
 
 ### Humio Fluentbit
 
@@ -356,11 +328,10 @@ You have to change the retention options for the humio repository
 
 ```
 
-
 #### Manual installation (optional - old way)
 
 ```bash
-export INGEST_TOKEN=<MY_TOKEN> (put your token from above)
+export INGEST_TOKEN=<TOKEN_FOR_HUMIO_AIOPS_REPOSITORY> (put your token from above)
 
 oc adm policy add-scc-to-user privileged -n humio-logging -z humio-fluentbit-fluentbit-read
 
@@ -380,13 +351,11 @@ oc delete -n humio-logging pods -l k8s-app=humio-fluentbit
 
 ```
 
-
-
 ---------------------------------------------------------------------------------------------------------------
+
 ## Configure Applications and Topology
+
 ------------------------------------------------------------------------------
-
-
 
 ### Create Kubernetes Observer for the Demo Applications
 
@@ -402,7 +371,6 @@ Do this for RobotShop and QuoteOfTheDay
 * Set Provider to whatever you like (usually I set it to “listenJob” as well)
 * `Save`
 
-
 ### Create REST Observer to Load Topologies
 
 * In CP4WAIOPS go into `Define` / `Data and tool integrations` / `Advanced` / `Manage ObserverJobs` / `Add a new Job`
@@ -412,8 +380,6 @@ Do this for RobotShop and QuoteOfTheDay
 * Set Provider to whatever you like (usually I set it to “listenJob” as well)
 * `Save`
 
-
-
 ### Create Merge Rules for Kubernetes Observer
 
 Launch the following:
@@ -421,7 +387,6 @@ Launch the following:
 ```bash
 ./tools/5_topology/create-merge-rules.sh
 ```
-
 
 ### Load Merge Topologies
 
@@ -435,12 +400,11 @@ This will create Merge Topologies for the two Applications.
 
 Please manually re-run the Kubernetes Observer to make sure that the merge has been done.
 
-
 ### Create AIOps Application
 
 #### Robotshop
 
-* In CP4WAIOPS go into `Operate` / `Application Management` 
+* In CP4WAIOPS go into `Operate` / `Application Management`
 * Click `Create Application`
 * Select `robot-shop` namespace
 * Click `Add to Application`
@@ -448,10 +412,9 @@ Please manually re-run the Kubernetes Observer to make sure that the merge has b
 * If you like check `Mark as favorite`
 * Click `Save`
 
-
 #### Quote of the Day
 
-* In CP4WAIOPS go into `Operate` / `Application Management` 
+* In CP4WAIOPS go into `Operate` / `Application Management`
 * Click `Create Application`
 * Select `qotd` namespace
 * Click `Add to Application`
@@ -459,12 +422,10 @@ Please manually re-run the Kubernetes Observer to make sure that the merge has b
 * If you like check `Mark as favorite`
 * Click `Save`
 
-
-
-
-
 ---------------------------------------------------------------------------------------------------------------
+
 ## Configure Event Manager
+
 ------------------------------------------------------------------------------
 
 ### Event Manager Webhooks
@@ -474,17 +435,12 @@ Create Webhooks in Event Manager for Event injection and incident simulation for
 The demo scripts (in the `demo` folder) give you the possibility to simulate an outage without relying on the integrations with other systems.
 
 At this time it simulates:
-- Git push event
-- Log Events (Humio)
-- Security Events (Falco)
-- Instana Events
+* Git push event
+* Log Events (Humio)
+* Security Events (Falco)
+* Instana Events
 
-
-You have to define the following Webhooks in Event Manager (NOI): 
-
-
-
-
+You have to define the following Webhooks in Event Manager (NOI):
 
 #### Generic Demo Webhook
 
@@ -496,8 +452,6 @@ You have to define the following Webhooks in Event Manager (NOI):
 * Click on `Optional event attributes`
 * Scroll down and click on the + sign for `URL`
 * Click `Confirm Selections`
-
-
 
 Use this json:
 
@@ -523,7 +477,6 @@ Fill out the following fields and save:
 
 Optionnally you can also add `Expiry Time` from `Optional event attributes` and set it to a convenient number of seconds (just make sure that you have time to run the demo before they expire.
 
-
 ### Create custom Filter and View in NOI (optional)
 
 #### Filter
@@ -533,16 +486,16 @@ Duplicate `Default` filter and set to global.
 * Name: AIOPS
 * Logic: Any
 * Filter:
-	* Manager like 'Inbound Webhook' 
-	* Manager = ''
+  * Manager like 'Inbound Webhook'
+  * Manager = ''
 
 #### View
 
 Duplicate View `Example_IBM_CloudAnalytics` and set to global.
 
-
 * Name: AIOPS
-* 
+
+*
 
 ### Create Templates for Topology Grouping (optional)
 
@@ -560,7 +513,7 @@ Create a template for RobotShop:
 * Name the template (robotshop)
 * Select `Namespace` in `Group type`
 * Enter `robotshop_` for `Name prefix`
-* Select `Application` 
+* Select `Application`
 * Add tag `app:robotshop`
 * Save
 
@@ -571,11 +524,9 @@ Create a template for QOTD:
 * Name the template (robotshop)
 * Select `Namespace` in `Group type`
 * Enter `qotd_` for `Name prefix`
-* Select `Application` 
+* Select `Application`
 * Add tag `app:qotd`
 * Save
-
-
 
 ### Create grouping Policy
 
@@ -593,18 +544,19 @@ in the Netcool WebGUI
 * Name it `Launch URL`
 * Replace the Script Command with the following code
 
-	```javascript
-	var urlId = '{$selected_rows.URL}';
-	
-	if (urlId == '') {
-	    alert('This event is not linked to an URL');
-	} else {
-	    var wnd = window.open(urlId, '_blank');
-	}
-	```
+ ```javascript
+ var urlId = '{$selected_rows.URL}';
+ 
+ if (urlId == '') {
+     alert('This event is not linked to an URL');
+ } else {
+     var wnd = window.open(urlId, '_blank');
+ }
+ ```
+
 * Save
 
-Then 
+Then
 
 * Go to `Administration` / `Menu Configuration`
 * Select `alerts`
@@ -613,22 +565,25 @@ Then
 * `Save`
 
 ---------------------------------------------------------------------------------------------------------------
+
 ## Training
+
 ------------------------------------------------------------------------------
+
 ### Train Log Anomaly - RobotShop
 
 #### Prerequisites
 
 ##### Humio URL
 
-- Get the Humio Base URL from your browser
-- Add at the end `/api/v1/repositories/aiops/query`
-
+* Get the Humio Base URL from your browser
+* Add at the end `/api/v1/repositories/aiops/query`
 
 ##### Accounts Token
 
 Get it from Humio --> `Owl` in the top right corner / `Your Account` / `API Token
 `
+
 #### Create Humio Integration
 
 * In the CP4WAIOPS "Hamburger" Menu select `Operate`/`Data and tool integrations`
@@ -638,15 +593,15 @@ Get it from Humio --> `Owl` in the top right corner / `Your Account` / `API Toke
 * Paste the Token from above (`API key`)
 * In `Filters (optional)` put the following:
 
-	```yaml
-	"kubernetes.namespace_name" = /robot-shop|qotd/
-	| "kubernetes.container_name" != load | "kubernetes.container_name" != qotd-load
-	```
+ ```yaml
+ "kubernetes.namespace_name" = /robot-shop|qotd/
+ | "kubernetes.container_name" != load | "kubernetes.container_name" != qotd-load
+ ```
+
 * Click `Test Connection`
 * Leave `Data Flow` in the `**off**` position ❗
 * Select `Live data for continuous AI training and anomaly detection`
 * Click `Save`
-
 
 #### Create Kafka Training Integration
 
@@ -657,21 +612,20 @@ Get it from Humio --> `Owl` in the top right corner / `Your Account` / `API Toke
 * Select `Mapping Type` / `Humio`
 * Paste the following in `Mapping` (the default is **incorrect**!:
 
-	```json
-	{
-	"codec": "humio",
-	"message_field": "@rawstring",
-	"log_entity_types": "kubernetes.namespace_name,kubernetes.container_hash,kubernetes.host,kubernetes.container_name,kubernetes.pod_name",
-	"instance_id_field": "kubernetes.container_name",
-	"rolling_time": 10,
-	"timestamp_field": "@timestamp"
-	}
-	```
-	
+ ```json
+ {
+ "codec": "humio",
+ "message_field": "@rawstring",
+ "log_entity_types": "kubernetes.namespace_name,kubernetes.container_hash,kubernetes.host,kubernetes.container_name,kubernetes.pod_name",
+ "instance_id_field": "kubernetes.container_name",
+ "rolling_time": 10,
+ "timestamp_field": "@timestamp"
+ }
+ ```
+ 
 * Toggle `Data Flow` to the `ON` position
 * Select `Data feed for initial AI Training`
 * Click `Save`
-
 
 #### Load Kafka Training Data
 
@@ -683,15 +637,13 @@ unzip ./robotshop-12h.json.zip
 cd -
 ```
 
-
-
 Run the script to inject training data:
 
 ```bash
 ./tools/8_training/train-logs-robotshop.sh
 ```
-This should not take more than 15-20 minutes.
 
+This should not take more than 15-20 minutes.
 
 If you want to check if the training data has been loaded you can execute:
 
@@ -712,7 +664,6 @@ yellow open 1000-1000-20210505-logtrain      06XVqpPTTlCPYlIfZqr-bA 1 1 315652 0
 yellow open 1000-1000-20210506-logtrain      slP32RncT-eCEPiUPWrDDg 1 1 385026 0 114.4mb 114.4mb
 ```
 
-
 #### Create Training Definition
 
 * In the CP4WAIOPS "Hamburger" Menu select `Operate`/`AI model management`
@@ -725,24 +676,21 @@ yellow open 1000-1000-20210506-logtrain      slP32RncT-eCEPiUPWrDDg 1 1 385026 0
 * Click `Next`
 * Click `Create`
 
-
 #### Train the model
 
 * In the training definition click on `Actions` / `Start Training`
 * This will start a precheck that should tell you after a while that you are ready for training
 * Click on `Actions` / `Start Training` again
 
-After successful training you should get: 
+After successful training you should get:
 
 ![](./pics/training1.png)
 
 * In the training definition click on `Actions` / `Deploy`
 
-
 ⚠️ If the training shows errors, please make sure that the date range of the training data is set to 21/05/04 to 21/05/07 (this is when the logs we're going to inject have been created)
 
 #### Enable Log Anomaly detection
-
 
 * In the CP4WAIOPS "Hamburger" Menu select `Operate`/`Data and tool integrations`
 * Under `Kafka`, click on `2 integrations`
@@ -751,11 +699,7 @@ After successful training you should get:
 * Switch `Data Flow` to `on`
 * Click `Save`
 
-
-
 ### Train Event Grouping
-
-
 
 #### Create Integration
 
@@ -772,10 +716,10 @@ First we have to create some Events to train on.
 
 * Adapt the file `./tools/8_training/train-events.sh` by pasting the Webhook URL from above (Generic Demo Webhook).
 * Run the Event Generation for 2-3 minutes
-	
-	```bash
-	./tools/8_training/train-events-robotshop.sh.sh
-	```
+ 
+ ```bash
+ ./tools/8_training/train-events-robotshop.sh.sh
+ ```
 
 #### Create Training Definition
 
@@ -789,12 +733,11 @@ First we have to create some Events to train on.
 * Click `Next`
 * Click `Create`
 
-
 #### Train the model
 
 * In the training definition click on `Actions` / `Start Training`
 
-After successful training you should get: 
+After successful training you should get:
 
 ![](./pics/training2.png)
 
@@ -810,15 +753,7 @@ The "Needs improvement" is no concern for the time being.
 * Scroll down and select `Data feed for continuous AI training and anomaly detection`
 * Switch `Data Flow` to `on`
 
-
-
-
-
-
-
-
 ### Train Incident Similarity
-
 
  ❗ Big ugly HACK!
  ⚠️ **This is officially unsupported!**
@@ -833,9 +768,7 @@ Run the following and make sure the Pod is running:
 
 Wait for the Pod to become available.
 
-
 #### Incidents Similarity Training
-
 
 Run the following:
 
@@ -846,7 +779,7 @@ Run the following:
 This will:
 
 1. upload the training files for the application to the training pod
-1. output the code that you will have to run in the training pod and 
+1. output the code that you will have to run in the training pod and
 1. open a shell in the training pod where you can run the commands from step 2.
 
 So just start the script and wait until you get to the prompt.
@@ -855,49 +788,38 @@ Then copy the code a bit further up
 
 ![](./pics/train0.png)
 
-
 and paste/execute the code in the pod.
 
 ![](./pics/train1.png)
 
-
 This will train the three similar incident models for the demo applications.
 
-##### To come:
+##### To come
+
 ❗ A more official way is in the works, in short:
 
-- Create Dummy SNOW integration (with Live data for initial AI training)
-- Create `Training Definition`
-- Stream normalized data into Kafka Topic `watsonaiops.incident`
+* Create Dummy SNOW integration (with Live data for initial AI training)
+* Create `Training Definition`
+* Stream normalized data into Kafka Topic `watsonaiops.incident`
 
 ❗ This has not been tested and I just put this here for documentation!
 
-
-
-
-
-
-
-
-
-
-
-
 ---
+
 ### Train Log Anomaly - Quote of the Day
 
 #### Prerequisites
 
 ##### Humio URL
 
-- Get the Humio Base URL from your browser
-- Add at the end `/api/v1/repositories/aiops/query`
-
+* Get the Humio Base URL from your browser
+* Add at the end `/api/v1/repositories/aiops/query`
 
 ##### Accounts Token
 
 Get it from Humio --> `Owl` in the top right corner / `Your Account` / `API Token
 `
+
 #### Create Humio Integration
 
 If you havent' done this for Robotshop (this is only needed once)
@@ -909,15 +831,15 @@ If you havent' done this for Robotshop (this is only needed once)
 * Paste the Token from above (`API key`)
 * In `Filters (optional)` put the following:
 
-	```yaml
-	"kubernetes.namespace_name" = /robot-shop|qotd/
-	| "kubernetes.container_name" != load | "kubernetes.container_name" != qotd-load
-	```
+ ```yaml
+ "kubernetes.namespace_name" = /robot-shop|qotd/
+ | "kubernetes.container_name" != load | "kubernetes.container_name" != qotd-load
+ ```
+
 * Click `Test Connection`
 * Leave `Data Flow` in the `**off**` position ❗
 * Select `Live data for continuous AI training and anomaly detection`
 * Click `Save`
-
 
 #### Create Kafka Training Integration
 
@@ -930,21 +852,20 @@ If you havent' done this for Robotshop (this is only needed once)
 * Select `Mapping Type` / `Humio`
 * Paste the following in `Mapping` (the default is **incorrect**!:
 
-	```json
-	{
-	"codec": "humio",
-	"message_field": "@rawstring",
-	"log_entity_types": "kubernetes.namespace_name,kubernetes.container_hash,kubernetes.host,kubernetes.container_name,kubernetes.pod_name",
-	"instance_id_field": "kubernetes.container_name",
-	"rolling_time": 10,
-	"timestamp_field": "@timestamp"
-	}
-	```
-	
+ ```json
+ {
+ "codec": "humio",
+ "message_field": "@rawstring",
+ "log_entity_types": "kubernetes.namespace_name,kubernetes.container_hash,kubernetes.host,kubernetes.container_name,kubernetes.pod_name",
+ "instance_id_field": "kubernetes.container_name",
+ "rolling_time": 10,
+ "timestamp_field": "@timestamp"
+ }
+ ```
+ 
 * Toggle `Data Flow` to the `ON` position
 * Select `Data feed for initial AI Training`
 * Click `Save`
-
 
 #### Load Kafka Training Data
 
@@ -956,15 +877,13 @@ unzip ./QOTD-12h.json.zip
 cd -
 ```
 
-
-
 Run the script to inject training data:
 
 ```bash
 ./tools/8_training/train-logs-qotd
 ```
-This should not take more than 15-20 minutes.
 
+This should not take more than 15-20 minutes.
 
 If you want to check if the training data has been loaded you can execute:
 
@@ -984,7 +903,6 @@ You should get something like this (for 20210511):
 yellow open 1000-1000-20210511-logtrain         DiGVAYRDRg-tPx7OVoTgLg 1 1      6     0  15.5mb  15.5mb
 ```
 
-
 #### Create Training Definition
 
 * In the CP4WAIOPS "Hamburger" Menu select `Operate`/`AI model management`
@@ -997,24 +915,21 @@ yellow open 1000-1000-20210511-logtrain         DiGVAYRDRg-tPx7OVoTgLg 1 1      
 * Click `Next`
 * Click `Create`
 
-
 #### Train the model
 
 * In the training definition click on `Actions` / `Start Training`
 * This will start a precheck that should tell you after a while that you are ready for training
 * Click on `Actions` / `Start Training` again
 
-After successful training you should get: 
+After successful training you should get:
 
 ![](./pics/training1.png)
 
 * In the training definition click on `Actions` / `Deploy`
 
-
 ⚠️ If the training shows errors, please make sure that the date range of the training data is set to 21/05/04 to 21/05/07 (this is when the logs we're going to inject have been created)
 
 #### Enable Log Anomaly detection
-
 
 * In the CP4WAIOPS "Hamburger" Menu select `Operate`/`Data and tool integrations`
 * Under `Kafka`, click on `2 integrations`
@@ -1023,11 +938,7 @@ After successful training you should get:
 * Switch `Data Flow` to `on`
 * Click `Save`
 
-
-
 ### Train Event Grouping
-
-
 
 #### Create Integration
 
@@ -1044,10 +955,10 @@ First we have to create some Events to train on.
 
 * Adapt the file `./tools/8_training/train-events.sh` by pasting the Webhook URL from above (Generic Demo Webhook).
 * Run the Event Generation for 2-3 minutes
-	
-	```bash
-	./tools/8_training/train-events-qotd.sh
-	```
+ 
+ ```bash
+ ./tools/8_training/train-events-qotd.sh
+ ```
 
 #### Create Training Definition
 
@@ -1061,12 +972,11 @@ First we have to create some Events to train on.
 * Click `Next`
 * Click `Create`
 
-
 #### Train the model
 
 * In the training definition click on `Actions` / `Start Training`
 
-After successful training you should get: 
+After successful training you should get:
 
 ![](./pics/training2.png)
 
@@ -1082,11 +992,7 @@ The "Needs improvement" is no concern for the time being.
 * Scroll down and select `Data feed for continuous AI training and anomaly detection`
 * Switch `Data Flow` to `on`
 
-
 ### Train Incident Similarity
-
-
-
 
  ❗ Big ugly HACK!
  ⚠️ **This is officially unsupported!**
@@ -1101,9 +1007,7 @@ Run the following and make sure the Pod is running:
 
 Wait for the Pod to become available.
 
-
 #### Incidents Similarity Training
-
 
 Run the following:
 
@@ -1114,7 +1018,7 @@ Run the following:
 This will:
 
 1. upload the training files for the application to the training pod
-1. output the code that you will have to run in the training pod and 
+1. output the code that you will have to run in the training pod and
 1. open a shell in the training pod where you can run the commands from step 2.
 
 So just start the script and wait until you get to the prompt.
@@ -1123,33 +1027,31 @@ Then copy the code a bit further up
 
 ![](./pics/train0.png)
 
-
 and paste/execute the code in the pod.
 
 ![](./pics/train1.png)
 
-
 This will train the three similar incident models for the demo applications.
 
-##### To come:
+##### To come
+
 ❗ A more official way is in the works, in short:
 
-- Create Dummy SNOW integration (with Live data for initial AI training)
-- Create `Training Definition`
-- Stream normalized data into Kafka Topic `watsonaiops.incident`
+* Create Dummy SNOW integration (with Live data for initial AI training)
+* Create `Training Definition`
+* Stream normalized data into Kafka Topic `watsonaiops.incident`
 
 ❗ This has not been tested and I just put this here for documentation!
 
-
-
 ---------------------------------------------------------------------------------------------------------------
-## Configure Runbooks
-------------------------------------------------------------------------------
 
+## Configure Runbooks
+
+------------------------------------------------------------------------------
 
 ### Create Bastion Server
 
-This creates a simple Pod with the needed tools (oc, kubectl) being used as a bastion host for Runbook Automation. 
+This creates a simple Pod with the needed tools (oc, kubectl) being used as a bastion host for Runbook Automation.
 
 ```bash
 oc apply -n default -f ./tools/6_bastion/create-bastion.yaml
@@ -1162,20 +1064,16 @@ oc apply -n default -f ./tools/6_bastion/create-bastion.yaml
 * Go to  `Administration` / `Integration with other Systems` / `Automation Type` / `Script`
 * Copy the SSH KEY
 
-
-#### Adapt SSL Certificate in Bastion Host Deployment. 
+#### Adapt SSL Certificate in Bastion Host Deployment
 
 * Select the `bastion-host` Deployment in Namespace `default`
 * Adapt Environment Variable SSH_KEY with the key you have copied above.
 
-
-
 ### Create Automation
 
-
 #### Connect to Cluster
-`Automation` / `Runbooks` / `Automations` / `New Automation`
 
+`Automation` / `Runbooks` / `Automations` / `New Automation`
 
 ```bash
 oc login --token=$token --server=$ocp_url
@@ -1186,14 +1084,13 @@ Use these default values
 ```yaml
 target: bastion-host-service.default.svc
 user:   root
-$token	 : Token from your login (ACCESS_DETAILS_XXX.md)	
-$ocp_url : URL from your login (ACCESS_DETAILS_XXX.md, something like https://c102-e.eu-de.containers.cloud.ibm.com:32236)		
+$token  : Token from your login (ACCESS_DETAILS_XXX.md) 
+$ocp_url : URL from your login (ACCESS_DETAILS_XXX.md, something like https://c102-e.eu-de.containers.cloud.ibm.com:32236)  
 ```
 
-
 #### RobotShop Mitigate Ratings
-`Automation` / `Runbooks` / `Automations` / `New Automation`
 
+`Automation` / `Runbooks` / `Automations` / `New Automation`
 
 ```bash
 oc scale deployment --replicas=1 -n robot-shop ratings
@@ -1204,12 +1101,10 @@ Use these default values
 
 ```yaml
 target: bastion-host-service.default.svc
-user:   root		
+user:   root  
 ```
 
-
 ### Create Runbooks
-
 
 * `Library` / `New Runbook`
 * Name it `Mitigate RobotShop Problem`
@@ -1220,18 +1115,17 @@ user:   root
 * Select `Use default value` for all parameters
 * Click `Publish`
 
-
-
 -------
+
 ### Add Runbook Triggers
 
 * `Triggers` / `New Trigger`
 * Name and Description: `Mitigate RobotShop Problem`
 * Conditions
-	* Name: RobotShop
-	* Attribute: Node
-	* Operator: Equals
-	* Value: ratings-deployment
+  * Name: RobotShop
+  * Attribute: Node
+  * Operator: Equals
+  * Value: ratings-deployment
 * Click `Run Test`
 * You should get an Event `[Instana] Robotshop available replicas is less than desired replicas - Check conditions and error events - ratings`
 * Select `Mitigate RobotShop Problem`
@@ -1239,11 +1133,10 @@ user:   root
 * Toggle `Execution` / `Automatic` to `off`
 * Click `Save`
 
-
-
-
 ---------------------------------------------------------------------------------------------------------------
+
 ## Slack integration
+
 ------------------------------------------------------------------------------
 
 ### ❗NEEDS UPDATING
@@ -1273,6 +1166,7 @@ oc create -f openshift-tls-secret.yaml
 
 cat openshift-tls-secret.yaml
 ```
+
 Adapt the `aiops` namespace if you have changed it to something else then run:
 
 ```bash
@@ -1281,16 +1175,14 @@ rm openshift-tls-secret.yaml
 ```
 
 Wait for the nginx pods to come up.
+
 ```bash
 oc get -n aiops pods | grep nginx
 ```
 
 You must get two `nginx` pods running 1/1.
 
-
-#### If the integration is not working:
-
-
+#### If the integration is not working
 
 Restart the Slack integration:
 
@@ -1299,7 +1191,6 @@ oc delete pod -n aiops $(oc get po -n aiops |grep aio-chatops-slack-integrator|a
 
 oc get -n aiops pods | grep aio-chatops-slack-integrator
 ```
-
 
 and/or run:
 
@@ -1316,19 +1207,13 @@ for i in `oc -n $WAIOPS_NAMESPACE get pods -l component=ibm-nginx -o jsonpath='{
 rm -f cert.crt cert.key
 ```
 
+### Integration
 
+More details are [in the official documentation](https://www.ibm.com/docs/en/cloud-paks/cp-waiops/3.1.0?topic=integrations-configuring-slack-integration)
 
-
-### Integration 
-
-More details are [in the official documentation](https://www.ibm.com/docs/en/cloud-paks/cp-waiops/3.1.0?topic=integrations-configuring-slack-integration) 
-
-Or [here](./tree/master/tools/4_integrations/slack) 
-
-
+Or [here](./tree/master/tools/4_integrations/slack)
 
 Thanks Robert Barron!
-
 
 ### Create User OAUTH Token
 
@@ -1342,30 +1227,20 @@ This is based on [Slack Cleaner2](https://github.com/sgratzl/slack_cleaner2).
 1. Select 'Save changes'
 2. Redeploy App if needed
 
-
 #### User Token scopes
+
 - `channels:read`
-- `channels:history`
-- `chat:write`
-- `files:read`
-- `files:write`
-- `groups:history`
-- `groups:read`
-- `im:history`
-- `im:read`
-- `mpim:history`
-- `mpim:read`
-- `users:read`
-
-
-
-
-
-
-
-
-
-
+* `channels:history`
+* `chat:write`
+* `files:read`
+* `files:write`
+* `groups:history`
+* `groups:read`
+* `im:history`
+* `im:read`
+* `mpim:history`
+* `mpim:read`
+* `users:read`
 
 ### Change the Slash Welcome Message (optional)
 
@@ -1375,16 +1250,13 @@ If you want to change the welcome message
 oc set env deployment/$(oc get deploy -l app.kubernetes.io/component=chatops-slack-integrator -o jsonpath='{.items[*].metadata.name }') SLACK_WELCOME_COMMAND_NAME=/aiops-help
 ```
 
-
-
-
-
 ---------------------------------------------------------------------------------------------------------------
+
 ## Some Polishing
+
 ------------------------------------------------------------------------------
 
 ### Add LDAP Logins to CP4WAIOPS
-
 
 * Go to CP4AIOps Dashboard
 * Click on the top left "Hamburger" menu
@@ -1401,9 +1273,7 @@ oc set env deployment/$(oc get deploy -l app.kubernetes.io/component=chatops-sla
 * Click Next
 * Click Create
 
-
 ### Check if data is flowing
-
 
 ### Get Passwords and Credentials
 
@@ -1418,8 +1288,6 @@ You can monitor:
 * **derived-stories**: Here you see the stories that get created and pushed to Slack/Teams
 * **alerts-noi-1000-1000**: Check if Events from Event Manager are coming in and the Gateway is working as expected (only INSERTS are appearing here, so you might have to delete the Events in Event Manager first in order to recreate them)
 * **windowed-logs-1000-1000**: Check log data flowing for log anomaly detection (NOT training)
-
-
 
 ---
 
@@ -1450,7 +1318,6 @@ kubectl patch deployment evtmanager-ibm-hdm-analytics-dev-inferenceservice -n ai
 
 ❗ You'll have to retrain the Event Grouping on those Events
 
-
 ### Create Humio Webhook
 
 * `Administration` / `Integration with other Systems`
@@ -1459,22 +1326,17 @@ kubectl patch deployment evtmanager-ibm-hdm-analytics-dev-inferenceservice -n ai
 
 Name it `Humio` and jot down the WebHook URL.
 
-
-
-### Configure Humio Notifier 
+### Configure Humio Notifier
 
 **In Humio:**
 
 Go to:
 
 * `aiops` repository
-* `Alerts` / `Notifiers` 
+* `Alerts` / `Notifiers`
 * `New Notifier` with the Noi Webhook URL from [above](#humio-webhook) and Skip Cert Validation
 
-
 ### Create Alerts
-
-
 
 Click on Alerts -> `+ New Alert`
 
@@ -1485,8 +1347,6 @@ Create the following Alerts as shown in the picture
 ![](./pics/humio1.png)
 
 ❗**IMPORTANT**: Number `2` is especially important because otherwise the messages pushed to NOI get too big and NOI cannot ingest them.
-
-
 
 #### RobotRatingsProblem
 
@@ -1501,7 +1361,6 @@ resource.name=\"ratings\" severity= Major resource.hostname=ratings-deployment t
 
 Notification Frequency: 1 min
 ```
-
 
 #### RobotShopWebProblem
 
@@ -1531,9 +1390,7 @@ resource.name=\"web\" severity=Minor resource.hostname=web-deployment type.event
 Notification Frequency: 1 min
 ```
 
-
-> You can test by creating a Notifier with https://webhook.site/
-
+> You can test by creating a Notifier with <https://webhook.site/>
 
 ### Check Alerts
 
@@ -1541,49 +1398,37 @@ When you have defined your Alerts and Notifier you can test them by scaling down
 
 1. Scale down:
 
-
-	Robotshop
-	
-	```bash
-	oc scale --replicas=0  deployment ratings -n robot-shop
-	```
-
+ Robotshop
+ 
+ ```bash
+ oc scale --replicas=0  deployment ratings -n robot-shop
+ ```
 
 2. Check Alerts:
 
-	You should get some log lines matching the alert filter:
-	
-	![](./pics/humio3.png)
-	
-	If not, either you don't receive logs or your filters/alert definitions are wrong.
-	
+ You should get some log lines matching the alert filter:
+ 
+ ![](./pics/humio3.png)
+ 
+ If not, either you don't receive logs or your filters/alert definitions are wrong.
+ 
 2. Check Notifications:
 
-	You should get "Last triggered: ..." for each Alert:
-	
-	![](./pics/humio4.png)
-	
-	If not, your Notifier is incorrectly defined. Check the NOI Webhook URL.
+ You should get "Last triggered: ..." for each Alert:
+ 
+ ![](./pics/humio4.png)
+ 
+ If not, your Notifier is incorrectly defined. Check the NOI Webhook URL.
 
 3. Restore apps:
 
-	Don't forget to scale them back up:
-	
-
-	
-	Robotshop
-	
-	```bash
-	oc scale --replicas=0  deployment catalogue -n robot-shop
-	oc delete pod -n robot-shop $(oc get po -n robot-shop|grep catalogue|awk '{print$1}') --force --grace-period=0
-	oc delete pod -n robot-shop $(oc get po -n robot-shop|grep user|awk '{print$1}') --force --grace-period=0
-	
-	```
-
-
-
-
-
-
-
-
+ Don't forget to scale them back up:
+ 
+ Robotshop
+ 
+ ```bash
+ oc scale --replicas=0  deployment catalogue -n robot-shop
+ oc delete pod -n robot-shop $(oc get po -n robot-shop|grep catalogue|awk '{print$1}') --force --grace-period=0
+ oc delete pod -n robot-shop $(oc get po -n robot-shop|grep user|awk '{print$1}') --force --grace-period=0
+ 
+ ```
