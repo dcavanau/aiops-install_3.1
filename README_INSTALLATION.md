@@ -309,15 +309,19 @@ This is important as your PVCs will fill up otherwise and Humio can become unava
 
 #### Change retention size for aiops
 
-You have to change the retention options for the aiops repository
-
-![](./pics/humio1.png)
+* `aiops` / `Settings` / `Retention`
+* `Ingest limit in GB`: 5
+* `Storage size limit in GB`: 5
+* `Time limit in days`: 90
+* `Save`
 
 #### Change retention size for humio
 
-You have to change the retention options for the humio repository
-
-![](./pics/humio2.png)
+* `humio` / `Settings` / `Retention`
+* `Ingest limit in GB`: 5
+* `Storage size limit in GB`: 5
+* `Time limit in days`: 90
+* `Save`
 
 ### Humio Fluentbit
 
@@ -363,21 +367,20 @@ Do this for RobotShop and QuoteOfTheDay
 
 * In CP4WAIOPS go into `Define` / `Data and tool integrations` / `Advanced` / `Manage ObserverJobs` / `Add a new Job`
 * Select `Kubernetes` / `Configure`
-* Choose “local”
-* Set Unique ID to “<app-namespace>” (robot-shop, qotd...)
-* Set Datacenter (I use "demo")
-* Set `Correlate` to `true`
-* Set Namespace to “<app-namespace>” (robot-shop, qotd ...)
-* Set Provider to whatever you like (usually I set it to “listenJob” as well)
+* Choose “local” job type
+* Set `Unique ID` to “\<app-namespace\>” (robot-shop, qotd...)
+* Set `Datacenter` (I use "demo")
+* Set `Correlate` to `true` under `Additional patameters (Optional)`
+* Set `Namespace` to “\<app-namespace\>” (robot-shop, qotd ...) under `Additional patameters (Optional)`
 * `Save`
 
 ### Create REST Observer to Load Topologies
 
 * In CP4WAIOPS go into `Define` / `Data and tool integrations` / `Advanced` / `Manage ObserverJobs` / `Add a new Job`
 * Select `REST`/ `Configure`
-* Choose “bulk_replace”
-* Set Unique ID to “listenJob” (important!)
-* Set Provider to whatever you like (usually I set it to “listenJob” as well)
+* Choose “bulk_replace” job type
+* Set `Unique ID` to “listenJob” (important!)
+* Set `Provider` to whatever you like (usually I set it to “listenJob” as well)
 * `Save`
 
 ### Create Merge Rules for Kubernetes Observer
@@ -406,21 +409,21 @@ Please manually re-run the Kubernetes Observer to make sure that the merge has b
 
 * In CP4WAIOPS go into `Operate` / `Application Management`
 * Click `Create Application`
-* Select `robot-shop` namespace
+* Select `robot-shop` namespace under `All groups`
 * Click `Add to Application`
-* Name your Application (RobotShop)
+* Name your Application `RobotShop`
 * If you like check `Mark as favorite`
-* Click `Save`
+* Click `Create Application`
 
 #### Quote of the Day
 
 * In CP4WAIOPS go into `Operate` / `Application Management`
 * Click `Create Application`
-* Select `qotd` namespace
+* Select `qotd` namespace under `All groups`
 * Click `Add to Application`
-* Name your Application (Quote of the Day)
+* Name your Application `Quote of the Day`
 * If you like check `Mark as favorite`
-* Click `Save`
+* Click `Create Application`
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -453,7 +456,7 @@ You have to define the following Webhooks in Event Manager (NOI):
 * Scroll down and click on the + sign for `URL`
 * Click `Confirm Selections`
 
-Use this json:
+Use this json in the `Example incoming request` section:
 
 ```json
 {
@@ -477,34 +480,43 @@ Fill out the following fields and save:
 
 Optionnally you can also add `Expiry Time` from `Optional event attributes` and set it to a convenient number of seconds (just make sure that you have time to run the demo before they expire.
 
-### Create custom Filter and View in NOI (optional)
+### Create custom Filter and View in Event Manager (NOI) *optional*
+
+Return to the Event Manager home page by clicking on `IBM Netcool Operations Insight`
 
 #### Filter
 
 Duplicate `Default` filter and set to global.
 
+* `Manage views and filters` / `Create filters`
+* `Global Filters` / `Default` / `Copy filter`
+* `Global` / `OK`
 * Name: AIOPS
-* Logic: Any
+* `Filter Conditions` / `Basic` / `Any`
 * Filter:
   * Manager like 'Inbound Webhook'
   * Manager = ''
+* `Save and Close`
 
 #### View
 
 Duplicate View `Example_IBM_CloudAnalytics` and set to global.
 
+* `Administration` / `Views` / `System Views`
+* `Example_IBM_CloudAnalytics` / `Copy View`
+* `Gllobal` / `OK`
 * Name: AIOPS
-
-*
+* `Save and Close`
 
 ### Create Templates for Topology Grouping (optional)
 
 This gives you probale cause and is not strictly needed if you don't show Event Manager!
 
 * In the CP4WAIOPS "Hamburger" Menu select `Operate`/`Topology Viewer`
-* Then, in the top right corner, click on the icon with the three squares (just right of the cog)
+* Then, in the top right corner, click on the Group Templates icon with the three squares (just right of the cog)
 * Select `Create a new Template`
 * Select `Dynamic Template`
+* `Start`
 
 Create a template for RobotShop:
 
@@ -513,20 +525,20 @@ Create a template for RobotShop:
 * Name the template (robotshop)
 * Select `Namespace` in `Group type`
 * Enter `robotshop_` for `Name prefix`
-* Select `Application`
+* Select `Application` Icon
 * Add tag `app:robotshop`
-* Save
+* `Save template & generate groups`
 
 Create a template for QOTD:
 
 * Search for `qotd-web` (deployment)
 * Create Topology 3 Levels
-* Name the template (robotshop)
+* Name the template (qotd)
 * Select `Namespace` in `Group type`
 * Enter `qotd_` for `Name prefix`
 * Select `Application`
 * Add tag `app:qotd`
-* Save
+* `Save template & generate groups`
 
 ### Create grouping Policy
 
